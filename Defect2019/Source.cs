@@ -194,7 +194,7 @@ public struct Source : Idup<Source>, IEquatable<Source>, IComparable<Source>
             string[] st;
 
             // List<double> d = new List<double>();
-            List<Complex> c = new List<Complex>();
+            List<Complex> c = new List<Complex>(400);
 
             s = fs.ReadLine();
             while (s != null)
@@ -217,7 +217,7 @@ public struct Source : Idup<Source>, IEquatable<Source>, IComparable<Source>
     /// <returns></returns>
     public static Source[] GetSourcesWithFw(Source[] s, string directory)
     {
-        List<Source> t = new List<Source>();
+        List<Source> t = new List<Source>(s.Length);
         for (int i = 0; i < s.Length; i++)
         {
             if (File.Exists(Path.Combine(directory, $"f(w) from {s[i].Center}.txt")))
@@ -304,5 +304,10 @@ public struct Source : Idup<Source>, IEquatable<Source>, IComparable<Source>
     public int CompareTo(Source other)
     {
         return this.Center.Swap.CompareTo(other.Center.Swap);
+    }
+
+    public void MoveTo(Source t)
+    {
+        throw new NotImplementedException();
     }
 }

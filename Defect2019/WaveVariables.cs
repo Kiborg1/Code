@@ -189,7 +189,7 @@ public static class Functions
     }
     private static void ReadParams()
     {
-        string filename = "LastParamsConfig.txt";
+        const string filename = "LastParamsConfig.txt";
 
         if (File.Exists(filename))
             using (StreamReader f = new StreamReader(filename))
@@ -238,10 +238,10 @@ public static class Functions
     };
     public static Func<double, Complex> F2 = (double w) =>
     {
-        int N = 7;
+        const int N = 7;
 
-        double w1 = wc * (N + 1) / N + w, w2 = wc * (N - 1) / N + w, w3 = wc * (1 - N) / N + w, w4 = 2 - wc * (N + 1) / N, w5 = wc + w, w6 = w - wc;
-        Complex ew(double t, double ww) => Complex.Exp(Complex.I * t * ww) / ww;
+        double w1 = wc * ((N + 1.0) / N) + w, w2 = wc * ((N - 1.0) / N) + w, w3 = wc * ((1.0 - N) / N) + w, w4 = 2 - wc * ((N + 1.0) / N), w5 = wc + w, w6 = w - wc;
+        Complex ew(double t, double ww) => Complex.Expi(t * ww) / ww;
         Complex perv(double t) => ew(t, w1) + ew(t, w2) - ew(t, w3) - ew(t, w4) - 2 * (ew(t, w5) - ew(t, w6));
 
         return (perv(pimult2 * N / wc) - perv(0)) / 8;
@@ -330,7 +330,7 @@ public static class Functions
     /// <returns></returns>
     public static Vectors DeltassNPosRoots(double omega, double tmin, double tmax)
     {
-        List<double> list = new List<double>();
+        List<double> list = new List<double>(4);
         double alp, pi2 = (Math.PI / h).Sqr(), kappa = k2(omega), s = kappa;//kappa.Show();
         int k = 1;
         do
@@ -347,7 +347,7 @@ public static class Functions
     /// <summary>
     /// Возвращает массив полюсов при такой-то частоте
     /// </summary>
-    private static Func<double, Vectors> PolesMas = (double w) =>
+    private static readonly Func<double, Vectors> PolesMas = (double w) =>
        {
            ComplexFunc del = (Complex a) => Deltass(a, w);
            Vectors v1 = w < 0.1 ? Roots.OtherMethod(del, РабКонсоль.polesBeg, РабКонсоль.polesEnd, РабКонсоль.steproot / 200, 1e-12, Roots.MethodRoot.Bisec, false) : Roots.OtherMethod(del, РабКонсоль.polesBeg, РабКонсоль.polesEnd, РабКонсоль.steproot / 40, 1e-7, Roots.MethodRoot.Broyden, false);
@@ -386,9 +386,10 @@ public static class Functions
 
            for (int i = 0; i < nd.Length; i++)
            {
-               ar = a * Point.Eudistance(nd[i].Position, xy);
+               ref Normal2D nds = ref nd[i];
+               ar = a * Point.Eudistance(nds.Position, xy);
                tup = new Tuple<Complex, Complex>(МатКлассы.SpecialFunctions.MyBessel(1, ar), МатКлассы.SpecialFunctions.MyBessel(0, ar));
-               mat.FastAdd(InK(a, c, tup, x - nd[i].Position.x, y - nd[i].Position.y) * Q(nd[i].n));
+               mat.FastAdd(InK(a, c, tup, x - nds.Position.x, y - nds.Position.y) * Q(nds.n));
            }
            return mat;
        };
@@ -550,13 +551,13 @@ public static class Functions
 
         res[0] = ((Mi1 * jxx1 + Ni1 * jyy1) - (Mi2 * jxx2 + Ni2 * jyy2)) / r2;
         res[1] = K12;
-        res[2] = P * jx;
-        res[3] = K12;
-        res[4] = ((Mi1 * jyy1 + Ni1 * jxx1) - (Mi2 * jyy2 + Ni2 * jxx2)) / r2;
-        res[5] = P * jy;
-        res[6] = Si * jx;
-        res[7] = Si * jy;
-        res[8] = R1 * j0ara1 - R2 * j0ara2;
+        //  res[2] = P * jx;
+        res[/*3*/2] = K12;
+        res[/*4*/3] = ((Mi1 * jyy1 + Ni1 * jxx1) - (Mi2 * jyy2 + Ni2 * jxx2)) / r2;
+        // res[5] = P * jy;
+        res[/*6*/4] = Si * jx;
+        res[/*7*/5] = Si * jy;
+        // res[8] = R1 * j0ara1 - R2 * j0ara2;
     }
 
     /// <summary>
@@ -1010,7 +1011,7 @@ public static class Functions
     /// <param name="wt"></param>
     /// <param name="shift"></param>
     /// <returns></returns>
-    public static double GetFockS(Tuple<double, double> wt,double shift)=> Vg(pimult2 / (wt.Item1 * 1e6)) * (wt.Item2 - shift) * 1_000_000;//из км/с перевел в мм/с;
+    public static double GetFockS(Tuple<double, double> wt, double shift) => Vg(pimult2 / (wt.Item1 * 1e6)) * (wt.Item2 - shift) * 1_000_000;//из км/с перевел в мм/с;
 
     /// <summary>
     /// Задать сдвиг как его минимальную границу
@@ -1074,9 +1075,9 @@ public static class OtherMethods
     /// <param name="Y"></param>
     /// <param name="ycount"></param>
     /// <param name="smas"></param>
-    public static void Saveuxw3(double x0, double X, int xcount, double y0, double Y, Source[] smas)
+    public static void Saveuxw3(double x0, double X, int xcount, int ycount, double y0, double Y, Source[] smas)
     {
-        bool notEqualConfig = !EqualConfigs(x0, X, xcount, y0, Y, smas, out Source[] arr);
+        bool notEqualConfig = !EqualConfigs(x0, X, xcount, ycount, y0, Y, smas, out Source[] arr);
 
         if (notEqualConfig)
         {
@@ -1085,11 +1086,11 @@ public static class OtherMethods
             info = "Происходит запись вспомогательных файлов";
 
             Centers(smas);
-            Space(x0, X, xcount, y0, Y, smas);
+            Space(x0, X, xcount, ycount, y0, Y, smas);
 
             info = "Файлы записаны";
             info = null;
-            CalcD(x0, X, xcount, y0, Y, smas);
+            CalcD(x0, X, xcount, ycount, y0, Y, smas);
             info = "Происходит сохранение результата, чтобы в другой раз избежать повторных вычислений";
             WriteData(smas);
             info = "Результат записан";
@@ -1099,14 +1100,14 @@ public static class OtherMethods
             if (arr.Length > 0)
             {
                 info = "Создание недостающих файлов";
-                CalcD(x0, X, xcount, y0, Y, arr);
+                CalcD(x0, X, xcount, ycount, y0, Y, arr);
                 info = "Происходит сохранение результата, чтобы в другой раз избежать повторных вычислений";
                 WriteData(arr);
                 info = "Результат записан";
             }
 
             info = "Считываются данные с сохранённых источников";
-            ReadData(x0, X, xcount, y0, Y, smas.Where(p => !arr.Contains(p)).ToArray());
+            ReadData(x0, X, xcount, ycount, y0, Y, smas.Where(p => !arr.Contains(p)).ToArray());
             info = "Данные считаны";
         }
         info = null;
@@ -1121,16 +1122,16 @@ public static class OtherMethods
     /// <param name="Y"></param>
     /// <param name="ycount"></param>
     /// <param name="smas"></param>
-    public static void CalcD(double x0, double X, int xcount, double y0, double Y, Source[] smas)
+    public static void CalcD(double x0, double X, int xcount, int ycount, double y0, double Y, Source[] smas)
     {
         Saved = 0;
-        SaveCount = xcount * xcount * smas.Length;
+        SaveCount = xcount * ycount * smas.Length;
         var w = wmas;
         byte scount = (byte)smas.Length;
         int numberofs;
 
         double x, y;
-        double xh = (X - x0) / (xcount - 1), yh = (Y - y0) / (xcount - 1);
+        double xh = (X - x0) / (xcount - 1), yh = (Y - y0) / (ycount - 1);
 
         bool b;
         Point xy;
@@ -1143,6 +1144,9 @@ public static class OtherMethods
         double[][] plus, pminus;
         Vectors[] poles = new Vectors[wcount];
         double cor, sin, cos;
+        const double p0 = 1.0;
+        Complex hankelconst = Complex.Sqrt(2.0 / (Math.PI * new Complex(0, 1))) * new Complex(0, -p0 / 2);
+        double centerdist;
 
         void firstpolescalc()
         {
@@ -1188,29 +1192,61 @@ public static class OtherMethods
 
         Tuple<Complex, Complex> CALC(Source s, int snumber, int ii)
         {
-            Complex[] res = new Complex[9];
+            Complex[] res = new Complex[/*9*/6];
             Complex s1 = 0, s2 = 0, s3 = 0;
             Point QQs;
-            for (int k = 0; k < poles[ii].Deg; k++)
-            {
+            const int k = 2;
+           // for (int k = 1; k < poles[ii].Deg; k++)
+           // {
                 for (int i = 0; i < s.Norms.Length; i++)
                 {
                     QQs = QQ[snumber][ii][i];
 
+                    //третий столбец не считается (чтоб было быстрее)
                     InKtwiceFast(plus[ii][k], pminus[ii][k], c1[ii][k], c2[ii][k], HankelTuple(poles[ii][k] * ros[i]), xp[i], yp[i], ref res);
                     s1 += res[0] * QQs.x + res[1] * QQs.y;
-                    s2 += res[3] * QQs.x + res[4] * QQs.y;
-                    s3 += res[6] * QQs.x + res[7] * QQs.y;
+                    s2 += res[/*3*/2] * QQs.x + res[/*4*/3] * QQs.y;
+                    s3 += res[/*6*/4] * QQs.x + res[/*7*/5] * QQs.y;
                 }
-            }
+           // }
             return new Tuple<Complex, Complex>((s1 * cos + s2 * sin) * I2, s3 * I2);
+        }
+        Tuple<Complex, Complex> CALCfast(Source s, int ii)
+        {
+            Complex ur = 0, uz = 0;
+            Complex Mn, Sn, P, Htmp;
+            double r = centerdist;
+            double pr, polus;
+
+            Complex vch(Complex p, Complex m) => (p - m) * eps2[ii];
+
+            ref Vectors pols = ref poles[ii];
+            ref Complex[][] cc1 = ref c1[ii];
+            ref Complex[][] cc2 = ref c2[ii];
+
+            const int k = 2;
+
+           // for (int k = 2; k < poles[ii].Deg; k++)
+           // {
+                polus = pols[k];
+                pr = polus * r;
+                Htmp = Complex.Expi(pr) * (polus * polus);
+                Mn = vch(cc1[k][2], cc2[k][2]);
+                Sn = vch(cc1[k][3], cc2[k][3]);
+                P = МатКлассы.SpecialFunctions.MyBessel(1.0, polus * s.radius) * Htmp;
+
+                uz += Sn * P;
+                ur += polus * Mn * P;
+           // }
+
+            return new Tuple<Complex, Complex>(ur * hankelconst, uz * hankelconst);
         }
 
         firstpolescalc();
         for (int i = 0; i < xcount; i++)
         {
             x = x0 + i * xh;
-            for (int j = 0; j < xcount; j++)
+            for (int j = 0; j < ycount; j++)
             {
                 y = y0 + j * yh;
                 xy = new Point(x, y);
@@ -1232,6 +1268,7 @@ public static class OtherMethods
                         cor = new Number.Complex(x - s.Center.x, y - s.Center.y).Arg;
                         sin = Math.Sin(cor);
                         cos = Math.Cos(cor);
+                        centerdist = Point.Eudistance(xy, s.Center);
 
                         //заполнить массив расстояний, уникальный для источника и точки, но одинаковый при любых нормалях
                         xp = new double[s.Norms.Length];
@@ -1244,7 +1281,10 @@ public static class OtherMethods
                             ros[ii] = Point.Eudistance(s.Norms[ii].Position, xy);
                         }
 
-                        Parallel.For(0, wcount, (int k) => ur.OnlyAdd(new Tuple<double, double, double, Source>(x, y, w[k], s), CALC(s, numberofs, k)));
+                        if (s.MeType == Type.DCircle)
+                            Parallel.For(0, wcount, (int k) => ur.OnlyAdd(new Tuple<double, double, double, Source>(x, y, w[k], s), CALC(s, numberofs, k)));
+                        else
+                            Parallel.For(0, wcount, (int k) => ur.OnlyAdd(new Tuple<double, double, double, Source>(x, y, w[k], s), CALCfast(s, k)));
                         numberofs++;
                         Saved++;
                     }
@@ -1264,11 +1304,12 @@ public static class OtherMethods
     public static void CalcUXT(double[] xmas, double[] ymas, Source[] sources)
     {
         int count = xmas.Length;
+        int count2 = ymas.Length;
         Tuple<Complex, Complex>[] tmp;
         for (int ss = 0; ss < sources.Length; ss++)
             Parallel.For(0, count, (int xi) =>
             {
-                for (int yi = 0; yi < count; yi++)
+                for (int yi = 0; yi < count2; yi++)
                     tmp = Functions.CMAS_Memoized(xmas[xi], ymas[yi], sources[ss]);
             }
             );
@@ -1303,7 +1344,7 @@ public static class OtherMethods
 
         }
     }
-    private static void Space(double x0, double X, int xcount, double y0, double Y, Source[] smas)
+    private static void Space(double x0, double X, int xcount, int ycount, double y0, double Y, Source[] smas)
     {
         using (StreamWriter f = new StreamWriter("Space.txt"))
         {
@@ -1312,6 +1353,7 @@ public static class OtherMethods
             f.WriteLine($"xmax= {X.ToRString()}");
             f.WriteLine($"ymax= {Y.ToRString()}");
             f.WriteLine($"countS= {xcount}");
+            f.WriteLine($"countS2= {ycount}");
             f.WriteLine($"countW= {wcount}");
             f.WriteLine($"wbeg= {wbeg.ToRString()}");
             f.WriteLine($"wend= {wend.ToRString()}");
@@ -1344,14 +1386,14 @@ public static class OtherMethods
                     f.WriteLine($"{i + 1} {mas[i].Norms[j].Position.x.ToRString()} {mas[i].Norms[j].Position.y.ToRString()} {mas[i].Norms[j].n.x.ToRString()} {mas[i].Norms[j].n.y.ToRString()}".Replace(',', '.'));
         }
     }
-    private static void ReadData(double x0, double X, int xcount, double y0, double Y, Source[] mas)
+    private static void ReadData(double x0, double X, int xcount, int ycount, double y0, double Y, Source[] mas)
     {
         if (mas.Length == 0) return;
-        SaveCount = xcount * xcount * wcount * mas.Length;
+        SaveCount = xcount * ycount * wcount * mas.Length;
         Saved = 0;
         int[] saves = new int[mas.Length];
         Vectors xx = new Vectors(SeqWMemoized(x0, X, xcount));
-        Vectors yy = new Vectors(SeqWMemoized(y0, Y, xcount));
+        Vectors yy = new Vectors(SeqWMemoized(y0, Y, ycount));
         Vectors w = new Vectors(SeqWMemoized(wbeg, wend, wcount));
 
         Parallel.For(0, mas.Length, (int i) =>
@@ -1417,10 +1459,10 @@ public static class OtherMethods
         Saved = 0;
     }
 
-    private static bool EqualConfigs(double x0, double X, int xcount, double y0, double Y, Source[] smas, out Source[] emptymas)
+    private static bool EqualConfigs(double x0, double X, int xcount, int ycount, double y0, double Y, Source[] smas, out Source[] emptymas)
     {
-        List<Source> list = new List<Source>();
-        List<string> names = new List<string>();
+        List<Source> list = new List<Source>(smas.Length);
+        List<string> names = new List<string>(smas.Length);
         foreach (var s in smas)
         {
             list.Add(s.dup);
@@ -1438,6 +1480,7 @@ public static class OtherMethods
             if (X != f.ReadLine().Split(' ')[1].ToDouble()) return false;
             if (Y != f.ReadLine().Split(' ')[1].ToDouble()) return false;
             if (xcount != f.ReadLine().Split(' ')[1].ToInt32()) return false;
+            if (ycount != f.ReadLine().Split(' ')[1].ToInt32()) return false;
             if (wcount != f.ReadLine().Split(' ')[1].ToInt32()) return false;
             if (wbeg != f.ReadLine().Split(' ')[1].ToDouble()) return false;
             if (wend != f.ReadLine().Split(' ')[1].ToDouble()) return false;
