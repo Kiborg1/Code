@@ -414,7 +414,7 @@ namespace Defect2019
                     double t = tmin + i * th;
                     if (t == 0)
                         continue;
-                    string tit =  $"{Source.ToString(sourcesArray)}, t = {t.ToString(4)}, (xmin, xmax, count, ymin, ymax) = ({xmin}, {xmax}, {count}dot{count2}, {ymin}, {ymax})";
+                    string tit = $"{Source.ToString(sourcesArray)}, t = {t.ToString(4)}, (xmin, xmax, count, ymin, ymax) = ({xmin}, {xmax}, {count}dot{count2}, {ymin}, {ymax})";
                     ts.WriteLine(tit + ".txt");
                     pds.WriteLine($"3D ur, uz(title , {tit} ).pdf");
                     filenames[i] = "3D " + tit + " .png";
@@ -444,6 +444,7 @@ namespace Defect2019
             if (source.IsCancellationRequested) return;
             await Task.Run(() => StartProcess("OnlySurface.r", global: true));
             //new Библиотека_графики.PdfOpen("Полученные u-surfaces", Path.Combine(Environment.CurrentDirectory, $"{gl} .pdf")).Show();
+            CopyImages(gl);
             ShowImages(gl);
 
             OtherMethods.PlaySound("ПоверхностиПостроены");
@@ -495,6 +496,21 @@ namespace Defect2019
 
             new Библиотека_графики.ManyDocumentsShower(main, titles, docs).Show();
         }
+        private void CopyImages(string name) =>
+                Expendator.CopyFiles(Environment.CurrentDirectory,
+                   Path.GetDirectoryName(Expendator.GetWordFromFile("WhereData.txt")),
+                    new string[]
+            {
+                $"{name} .pdf",
+                $"{name} (heatmap).png",
+                $"{name} (heatmap_uz).png",
+                $"{name} (ur).html",
+                $"{name} (uz).html",
+                $"{name} (ur).txt",
+                $"{name} (uz).txt"
+            }.Where(f => File.Exists(f)).ToArray());
+
+
 
         /// <summary>
         /// Просуммировать все замеры
@@ -796,6 +812,36 @@ namespace Defect2019
             SetTotalLabel();
         }
 
+        private void установитьТочныеГраницыПрямоугольникаToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var r = GetSourceRect();
+            textBox1.Text = r.Item1.x.ToString();
+            textBox2.Text = r.Item2.x.ToString();
+            textBox3.Text = r.Item1.y.ToString();
+            textBox4.Text = r.Item2.y.ToString();
+        }
+        private Tuple<Point, Point> GetSourceRect() => Point.GetBigRect(sourcesArray.Select(s => s.Center).ToArray());
+
+        private void установитьГраницыПрямоугольника10ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var r = GetSourceRect();
+            var center = (r.Item1 + r.Item2)*0.5;
+            double lx = (r.Item1.x - r.Item2.x).Abs() / 2*0.9;
+            double ly = (r.Item1.y - r.Item2.y).Abs() / 2*0.9;
+
+
+            textBox1.Text = (center.x-lx).ToString();
+            textBox2.Text = (center.x + lx).ToString();
+            textBox3.Text = (center.y - ly).ToString();
+            textBox4.Text = (center.y + ly).ToString();
+        }
+
+        private void ecnfyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            GetFields();
+            new R2Area(new NetOnDouble(xmin, xmax, 40), new NetOnDouble(ymin, ymax, 40), textBox1, textBox2, textBox3, textBox4).Show();
+        }
+
         private void SetTotalLabel()
         {
             label10.Text = $"total:{Environment.NewLine}{(int)(numericUpDown1.Value * numericUpDown3.Value)}";
@@ -839,7 +885,7 @@ namespace Defect2019
             Expendator.WriteStringInFile("MetrixSumOrMax.txt", s);
         }
 
-        Func<double, double, double, Source[], (double ur , double uz)> Uxt = Functions.Uxt3;
+        Func<double, double, double, Source[], (double ur, double uz)> Uxt = Functions.Uxt3;
 
         private void WriteXY(string filename, string path, double[] xmas, double[] ymas)
         {
